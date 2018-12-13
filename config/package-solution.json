@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/package-solution.schema.json",
+  "solution": {
+    "name": "helpful-resources-client-side-solution",
+    "id": "1bd851ae-140a-432c-a9ea-300ff07bcc7a",
+    "version": "1.0.0.0",
+    "includeClientSideAssets": true
+  },
+  "paths": {
+    "zippedPackage": "solution/helpful-resources.sppkg"
+  }
+}
