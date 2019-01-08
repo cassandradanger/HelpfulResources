@@ -1,4 +1,5 @@
 import { Version } from '@microsoft/sp-core-library';
+import { sp, Items, ItemVersion, Web } from "@pnp/sp";
 import {
   BaseClientSideWebPart,
   IPropertyPaneConfiguration,
@@ -6,7 +7,8 @@ import {
 } from '@microsoft/sp-webpart-base';
 import { escape } from '@microsoft/sp-lodash-subset';
 import {  
-  SPHttpClient  
+  SPHttpClient,
+  SPHttpClientResponse,
 } from '@microsoft/sp-http';  
 
 import styles from './HelpfulResourcesWebPart.module.scss';
@@ -17,12 +19,23 @@ export interface IHelpfulResourcesWebPartProps {
 }
 
 export interface ISPLists {
-  value: ISPList[];  
-}
+  value: ISPList[];
+ }
 
-export interface ISPList{
-  URL: any,
-  Description: any,
+export interface ISPList {
+  Title: string; // this is the department name in the List
+  Id: string;
+  AnncURL:string;
+  DeptURL:string;
+  CalURL:string;
+  a85u:string; // this is the LINK URL
+ }
+
+  //global vars
+  var userDept = "";
+
+export interface IHelpfulResourcesWebPartProps {
+  description: string;
 }
 
 export default class HelpfulResourcesWebPart extends BaseClientSideWebPart<IHelpfulResourcesWebPartProps> {
@@ -34,44 +47,72 @@ export default class HelpfulResourcesWebPart extends BaseClientSideWebPart<IHelp
         Helpful Resources
       </p>
       <ul class=${styles.contentHR}>
-        <div id="spListContainer" /></div>
+        <div id="ListItems" /></div>
       </ul>
     </div>`;
-      this._firstGetList();
   }
 
-  private _firstGetList() {
-    this.context.spHttpClient.get('https://girlscoutsrv.sharepoint.com' + 
-      `/_api/web/Lists/GetByTitle('Useful Reference Links and Lists')/Items?`, SPHttpClient.configurations.v1)
-      .then((response)=>{
-        response.json().then((data)=>{
-          console.log(data.value);
-          this._renderList(data.value)
-        })
+  getuser = new Promise((resolve,reject) => {
+    // SharePoint PnP Rest Call to get the User Profile Properties
+    return sp.profiles.myProperties.get().then(function(result) {
+      var props = result.UserProfileProperties;
+      props.forEach(function(prop) {
+        //this call returns key/value pairs so we need to look for the Dept Key
+        if(prop.Key == "Department"){
+          // set our global var for the users Dept.
+          userDept += prop.Value;
+        }
       });
-    }
-  
+      return result;
+    }).then((result) =>{
+      this._getListData().then((response) =>{
+        this._renderList(response.value);
+      });
+    });
+  });
+
+  public _getListData(): Promise<ISPLists> {  
+    return this.context.spHttpClient.get(`https://girlscoutsrv.sharepoint.com/_api/web/lists/GetByTitle('TeamDashboardSettings')/Items?$filter=Title eq '`+ userDept +`'`, SPHttpClient.configurations.v1)
+      .then((response: SPHttpClientResponse) => {
+        return response.json();
+      });
+   }
 
 
-    private _renderList(items: ISPList[]): void {
-      let html: string = ``;
+  private _renderList(items: ISPList[]): void {
+    let html: string = '';
+    var siteURL = "";
+    var helpfulResources =  "";
+
+    items.forEach((item: ISPList) => {
+      siteURL = item.DeptURL;
+      helpfulResources = item.a85u;
+   
+      const w = new Web("https://girlscoutsrv.sharepoint.com" + siteURL);
       
-      items.forEach((item: ISPList) => {
-        // var description: any;
-        // console.log(item.URL.Description);
-        // description = item.URL.Description;
-
-        html += `
+      // then use PnP to query the list
+      w.lists.getByTitle(helpfulResources).items
+      .get()
+      .then((data) => {
+        data.forEach((data) => {
+          html += `
           <li class=${styles.liHR}>
-            <a href=${item.URL.Url}>${item.URL.Description}</a>
-          </li>
-          `;  
-      });  
-      const listContainer: Element = this.domElement.querySelector('#spListContainer');  
-      listContainer.innerHTML = html;  
-    } 
+            <a href=${data.URL.Url}>${data.URL.Description}</a>
+          </li>`
+        })
+        const listContainer: Element = this.domElement.querySelector('#ListItems');
+        listContainer.innerHTML = html;
+      }).catch(e => { console.error(e); });
+    });
+  }
   
-  
+    public onInit():Promise<void> {
+      return super.onInit().then (_=> {
+        sp.setup({
+          spfxContext:this.context
+        });
+      });
+    }  
 
   protected get dataVersion(): Version {
     return Version.parse('1.0');

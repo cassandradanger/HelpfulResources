@@ -4,30 +4,38 @@ body{
 
 .mainHR{
   width: 300px;
+  margin-left: 10px;
 }
 .titleHR{
   color: black;
-  font-size: 13pt;
+  font-size: 11pt;
   font-weight: 600;
   text-align: center;
   display: inline-block;
-  margin-bottom: 0;
+  margin: 0 !important;
+  padding-left: 15px;
 }
 .contentHR{
   padding: 10px 10px 10px 20px;
   border: 1px solid #00ae58 !important;
   border-radius: 15px !important;
-  margin-top: 5px;
-  width: 235px;
-  height: 75px;
+  margin-top: 0;
+  width: 200px;
+  height: 100px;
   line-height: 10px;
   overflow: auto;
   word-wrap: none;
 }
 .liHR{
-  margin-bottom: 12px;
+  margin-bottom: 7px;
   list-style: none;
+  width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .liHR a{
   color: black;
+  text-decoration: none;
+  line-height: 1.2;
 }
